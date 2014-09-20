@@ -36,6 +36,7 @@ test("Rx.IObservable.toKoObservable(initialValue)", () => {
 	equal(xo(), 1, "changed value");
 });
 
+
 test("Rx.IObservable.toKoSubscribable()", () => {
 	var xs = new Rx.Subject<number>();
 	var xo = xs.toKoSubscribable();
@@ -106,6 +107,42 @@ test("Rx.Subject.toKoObservable", () => {
 		&& notifications[1].kind == "N"
 		&& notifications[1].value == 2,
 		"notified after ko's set");
+});
+
+
+
+test("Rx.Observable.toKoObservable() disposal", () => {
+    var isDisposed;
+    var xs = Rx.Observable.create((observer) => () => isDisposed = true);
+
+    var xo = xs.toKoObservable(20);
+
+    var disposer = xo.subscribe(function () { });
+    //var disposer2 = xo.subscribe(function () { });
+    disposer.dispose();
+
+
+    equal(isDisposed, true);
+
+});
+
+
+test("Rx.Observable.toKoObservable() two subscribers disposal", () => {
+    var isDisposed;
+    var xs = Rx.Observable.create((observer) => () => isDisposed = true);
+
+    var xo = xs.toKoObservable(20);
+
+    var disposer = xo.subscribe(function () { });
+    var disposer2 = xo.subscribe(function () { });
+    disposer.dispose();
+
+    equal(isDisposed, undefined);
+
+    disposer2.dispose();
+
+    equal(isDisposed, true);
+
 });
 
 test("ko.observable.toObservable()", () => {

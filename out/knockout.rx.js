@@ -71,10 +71,31 @@
 
         return subscribable;
     }
+    function addDispose(observable, dispose) {
+        var subscriptions = [];
+        var oldSubscribe = observable.subscribe.bind(observable);
+        observable.subscribe = function (callback, callbackTarget, event) {
+            var oldDispose, ret;
+            ret = oldSubscribe(callback, callbackTarget, event);
 
+            subscriptions.push(ret);
+            oldDispose = ret.dispose;
+            ret.dispose = function () {
+                subscriptions.splice(subscriptions.indexOf(ret), 1);
+                oldDispose.bind(this)();
+                if (!subscriptions.length) {
+                    dispose();
+                }
+            };
+            return ret;
+        };
+    }
     function rx2koObservable(initialValue) {
         var observable = ko.observable(initialValue);
-        this.subscribe(observable);
+        var rxSubscription = this.subscribe(observable);
+        addDispose(observable, function () {
+            return rxSubscription.dispose();
+        });
         return observable;
     }
 
@@ -91,7 +112,6 @@
             observable(value);
             changingBySubject = false;
         });
-
         return observable;
     }
 
